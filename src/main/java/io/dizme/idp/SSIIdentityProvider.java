@@ -1,5 +1,7 @@
 package io.dizme.idp;
 
+import jakarta.ws.rs.GET;
+import jakarta.ws.rs.QueryParam;
 import jakarta.ws.rs.core.NewCookie;
 import jakarta.ws.rs.core.Response;
 import jakarta.ws.rs.core.UriInfo;
@@ -16,6 +18,8 @@ import org.keycloak.sessions.AuthenticationSessionModel;
 import twitter4j.RequestToken;
 
 import java.net.URI;
+import java.net.URLEncoder;
+import java.nio.charset.StandardCharsets;
 
 public class SSIIdentityProvider extends AbstractIdentityProvider<SSIIdentityProviderConfig> {
 
@@ -32,25 +36,25 @@ public class SSIIdentityProvider extends AbstractIdentityProvider<SSIIdentityPro
         this.destinationValidator = destinationValidator;
         this.verifierUrl = config.getVerifierUrl();
         this.credentialType = config.getCredentialType();
-        logger.info("SSIIdentityProvider() called");
+        logger.debug("SSIIdentityProvider() called");
 
     }
 
     @Override
     public Object callback(RealmModel realm, AuthenticationCallback callback, EventBuilder event) {
-        logger.info("callback called");
+        logger.debug("callback called");
         // TODO: Define usermodel based on sessionid received in query param Or cookie
         // session.users().addUser(realm, "user");
+//        String username = session.getContext().getHttpRequest().getUri().getQueryParameters().get("username").get(0);
+//        String id = session.getContext().getHttpRequest().getUri().getQueryParameters().get("id").get(0);
+//        String state = session.getContext().getHttpRequest().getUri().getQueryParameters().get("state").get(0);
 
-
-        String sessionId = session.getContext().getHttpRequest().getUri().getQueryParameters().get("id").toString();
-        logger.info("SessionId: " + sessionId);
-        return super.callback(realm, callback, event);
+        return new SSIEndpoint(session, this, getConfig(), callback, destinationValidator);
     }
 
     @Override
     public Response performLogin(AuthenticationRequest request) {
-        logger.info("performLogin called");
+        logger.debug("performLogin called");
 //        try {
 ////            Perform redirect verso l'idp
 ////            Response.seeOther(new URI(verifierUrl+"/openid4vc/verify")).build();
@@ -69,15 +73,9 @@ public class SSIIdentityProvider extends AbstractIdentityProvider<SSIIdentityPro
                     "callbackUri",
                     request.getRedirectUri()
             );
-            URI uri = new URI(request.getRedirectUri() + "?state=" + request.getState().getEncoded() + "&id=$id");
-            return Response.seeOther(URI.create(verifierUrl))
-                    .cookie(
-                            new NewCookie(
-                                    "callbackUri",
-                                    uri.toString()
-                            )
-                    )
-                    .build();
+            URI uri = new URI(request.getRedirectUri() + "?state=" + request.getState().getEncoded());
+            String uriEncoded = URLEncoder.encode(uri.toString(), StandardCharsets.UTF_8);
+            return Response.seeOther(URI.create(verifierUrl + "?redirectUri=" + uriEncoded)).build();
         } catch (Exception e) {
             throw new IdentityBrokerException("Could send authentication request to twitter.", e);
         }
@@ -85,25 +83,25 @@ public class SSIIdentityProvider extends AbstractIdentityProvider<SSIIdentityPro
 
     @Override
     public void authenticationFinished(AuthenticationSessionModel authSession, BrokeredIdentityContext context) {
-        logger.info("authenticationFinished called");
+        logger.debug("authenticationFinished called");
         super.authenticationFinished(authSession, context);
     }
 
     @Override
     public Response retrieveToken(KeycloakSession keycloakSession, FederatedIdentityModel federatedIdentityModel) {
-        logger.info("retrieveToken called");
+        logger.debug("retrieveToken called");
         return Response.ok(federatedIdentityModel.getToken()).build();
     }
 
     @Override
     public Response keycloakInitiatedBrowserLogout(KeycloakSession session, UserSessionModel userSession, UriInfo uriInfo, RealmModel realm) {
-        logger.info("keycloakInitiatedBrowserLogout called");
+        logger.debug("keycloakInitiatedBrowserLogout called");
         return super.keycloakInitiatedBrowserLogout(session, userSession, uriInfo, realm);
     }
 
     @Override
     public Response export(UriInfo uriInfo, RealmModel realm, String format) {
-        logger.info("export called");
+        logger.debug("export called");
         return super.export(uriInfo, realm, format);
     }
 

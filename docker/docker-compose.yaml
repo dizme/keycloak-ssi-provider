@@ -1,21 +1,9 @@
 version: "3.2"
 
 services:
-  keycloak:
-    build:
-      context: ./
-      dockerfile: Dockerfile
-      args:
-        - KEYCLOAK_IMAGE=${KEYCLOAK_IMAGE}
-    environment:
-      KEYCLOAK_ADMIN: admin
-      KEYCLOAK_ADMIN_PASSWORD: admin
-      DB_VENDOR: h2
-      DEBUG: true
-      DEBUG_PORT: "0.0.0.0:5005"
-      DEBUG_SUSPEND: n
+  fake-idp:
+    image: nginx:alpine
     volumes:
-      - ./h2:/opt/keycloak/data/h2
+      - ./src:/usr/share/nginx/html
     ports:
-      - "8024:8080"
-      - "5005:5005"
+      - "80:80"

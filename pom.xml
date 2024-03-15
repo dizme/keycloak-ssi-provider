@@ -3,7 +3,7 @@
   <modelVersion>4.0.0</modelVersion>
 
   <groupId>io.dizme</groupId>
-  <artifactId>keycloak-w3c-auth</artifactId>
+  <artifactId>keycloak-ssi-provider</artifactId>
   <version>1.0-SNAPSHOT</version>
   <packaging>jar</packaging>
 
@@ -13,6 +13,7 @@
   <properties>
     <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
     <version.keycloak>23.0.7</version.keycloak>
+    <project.artifact.outputDirectory>${project.build.directory}/../../keycloak-23.0.7/providers/</project.artifact.outputDirectory>
   </properties>
 
   <dependencies>
@@ -68,21 +69,17 @@
 
   <build>
     <finalName>ssi-provider</finalName>
-    <pluginManagement>
-      <plugins>
-        <plugin>
-          <groupId>org.apache.maven.plugins</groupId>
-          <artifactId>maven-release-plugin</artifactId>
-          <version>3.0.0-M1</version>
-          <configuration>
-            <autoVersionSubmodules>true</autoVersionSubmodules>
-            <tagNameFormat>@{project.version}</tagNameFormat>
-            <releaseProfiles>release</releaseProfiles>
-          </configuration>
-        </plugin>
-      </plugins>
-    </pluginManagement>
     <plugins>
+      <plugin>
+        <groupId>org.apache.maven.plugins</groupId>
+        <artifactId>maven-release-plugin</artifactId>
+        <version>3.0.0-M1</version>
+        <configuration>
+          <autoVersionSubmodules>true</autoVersionSubmodules>
+          <tagNameFormat>@{project.version}</tagNameFormat>
+          <releaseProfiles>release</releaseProfiles>
+        </configuration>
+      </plugin>
       <plugin>
         <groupId>org.apache.maven.plugins</groupId>
         <artifactId>maven-compiler-plugin</artifactId>
