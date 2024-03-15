@@ -99,12 +99,14 @@ public class SSIEndpoint {
         logger.debug("id: " + id);
         logger.debug("state: " + state);
 
-        BrokeredIdentityContext identity = new BrokeredIdentityContext(id);
+        BrokeredIdentityContext identity = new BrokeredIdentityContext(username);
         identity.setUsername(username);
-        identity.setUserAttribute("username", username);
-        identity.setUserAttribute("id", id);
+        identity.setModelUsername(username);
+        identity.setEmail("test@dizme.io");
+        identity.setUserAttribute("username_attr", username);
+        identity.setUserAttribute("id_attr", id);
 
-        String brokerUserId = config.getAlias() + "." + id;
+        String brokerUserId = config.getAlias() + "." + username;
         identity.setBrokerUserId(brokerUserId);
 
         identity.setIdpConfig(config);
