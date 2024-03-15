@@ -6,6 +6,7 @@ import jakarta.ws.rs.core.HttpHeaders;
 import jakarta.ws.rs.core.MediaType;
 import jakarta.ws.rs.core.Response;
 import org.jboss.logging.Logger;
+import org.jboss.resteasy.annotations.cache.NoCache;
 import org.keycloak.broker.provider.BrokeredIdentityContext;
 import org.keycloak.broker.provider.IdentityProvider;
 import org.keycloak.common.ClientConnection;
@@ -49,6 +50,14 @@ public class SSIEndpoint {
     }
 
     @GET
+    @NoCache
+    @Path("descriptor")
+    public Response getSPDescriptor() {
+        return provider.export(session.getContext().getUri(), realm, null);
+    }
+
+
+    @GET
     public Response redirectBinding(@QueryParam("username") String username,
                                     @QueryParam("id") String id,
                                     @QueryParam("state") String state)  {
@@ -57,9 +66,31 @@ public class SSIEndpoint {
 
     @POST
     @Consumes(MediaType.APPLICATION_FORM_URLENCODED)
-    public Response postBinding(@QueryParam("username") String username,
-                                @QueryParam("id") String id,
-                                @QueryParam("state") String state) {
+    public Response postBinding(@FormParam("username") String username,
+                                @FormParam("id") String id,
+                                @FormParam("state") String state) {
+        return execute(username, id, state);
+    }
+
+    @Path("clients/{client_id}")
+    @GET
+    public Response redirectBinding(@QueryParam("username") String username,
+                                    @QueryParam("id") String id,
+                                    @QueryParam("state") String state,
+                                    @PathParam("client_id") String clientId)  {
+        return execute(username, id, state);
+    }
+
+
+    /**
+     */
+    @Path("clients/{client_id}")
+    @POST
+    @Consumes(MediaType.APPLICATION_FORM_URLENCODED)
+    public Response postBinding(@FormParam("username") String username,
+                                @FormParam("id") String id,
+                                @FormParam("state") String state,
+                                @PathParam("client_id") String clientId) {
         return execute(username, id, state);
     }
 
