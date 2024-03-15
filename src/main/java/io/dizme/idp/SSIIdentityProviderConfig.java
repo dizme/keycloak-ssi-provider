@@ -1,14 +1,13 @@
-package io.dizme;
+package io.dizme.idp;
 
 import org.jboss.logging.Logger;
-import org.keycloak.broker.oidc.OIDCIdentityProviderConfig;
 import org.keycloak.models.IdentityProviderModel;
 import org.keycloak.provider.ProviderConfigProperty;
 import org.keycloak.provider.ProviderConfigurationBuilder;
 
 import java.util.List;
 
-public class SSIIdentityProviderConfig extends OIDCIdentityProviderConfig {
+public class SSIIdentityProviderConfig extends IdentityProviderModel {
     protected static final Logger logger = Logger.getLogger(SSIIdentityProviderConfig.class);
 
     public static final String VERIFIER_URL = "verifierUrl";
@@ -16,13 +15,13 @@ public class SSIIdentityProviderConfig extends OIDCIdentityProviderConfig {
     public static final String CREDENTIAL_TYPE = "credentialType";
 
     public SSIIdentityProviderConfig() {
-        logger.debug("SSIIdentityProviderConfig() called");
+        logger.info("SSIIdentityProviderConfig() called");
     }
 
     public SSIIdentityProviderConfig(IdentityProviderModel identityProviderModel) {
         super(identityProviderModel);
 
-        logger.debug("SSIIdentityProviderConfig(IdentityProviderModel identityProviderModel) called");
+        logger.info("SSIIdentityProviderConfig(IdentityProviderModel identityProviderModel) called");
     }
 
     public String getVerifierUrl() {
@@ -42,7 +41,7 @@ public class SSIIdentityProviderConfig extends OIDCIdentityProviderConfig {
     }
 
     public static List<ProviderConfigProperty> getConfigProperties() {
-        logger.debug("getConfigProperties called");
+        logger.info("getConfigProperties called");
         return ProviderConfigurationBuilder.create()
 
                 .property()

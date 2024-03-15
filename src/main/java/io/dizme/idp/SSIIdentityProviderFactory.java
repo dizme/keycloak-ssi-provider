@@ -1,4 +1,4 @@
-package io.dizme;
+package io.dizme.idp;
 
 import org.jboss.logging.Logger;
 import org.keycloak.Config;
@@ -7,16 +7,18 @@ import org.keycloak.models.IdentityProviderModel;
 import org.keycloak.models.KeycloakSession;
 import org.keycloak.provider.ConfiguredProvider;
 import org.keycloak.provider.ProviderConfigProperty;
+import org.keycloak.provider.ServerInfoAwareProviderFactory;
 import org.keycloak.saml.validators.DestinationValidator;
 
 import java.io.InputStream;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 
-public class SSIIdentityProviderFactory extends AbstractIdentityProviderFactory<SSIIdentityProvider> implements ConfiguredProvider {
+public class SSIIdentityProviderFactory extends AbstractIdentityProviderFactory<SSIIdentityProvider> implements ConfiguredProvider, ServerInfoAwareProviderFactory {
     protected static final Logger logger = Logger.getLogger(SSIIdentityProviderFactory.class);
 
-    public static final String PROVIDER_ID = "ssi-oidc";
+    public static final String PROVIDER_ID = "ssi-verifier";
 
     private DestinationValidator destinationValidator;
 
@@ -24,44 +26,51 @@ public class SSIIdentityProviderFactory extends AbstractIdentityProviderFactory<
 
     @Override
     public String getName() {
-        logger.debug("getName called");
-        return "SSI OIDC";
+        logger.info("getName called");
+        return "SSI Verifier";
     }
 
     @Override
     public SSIIdentityProvider create(KeycloakSession keycloakSession, IdentityProviderModel identityProviderModel) {
-        logger.debug("create called");
+        logger.info("create called");
         identityProviderModel.getConfig();
         return new SSIIdentityProvider(keycloakSession, new SSIIdentityProviderConfig(identityProviderModel), destinationValidator);
     }
 
     @Override
     public IdentityProviderModel createConfig() {
-        logger.debug("createConfig called");
+        logger.info("createConfig called");
         return new SSIIdentityProviderConfig();
     }
 
     @Override
     public Map<String, String> parseConfig(KeycloakSession session, InputStream inputStream) {
-        logger.debug("parseConfig called");
+        logger.info("parseConfig called");
         return super.parseConfig(session, inputStream);
     }
 
     @Override
     public String getId() {
-        logger.debug("getId called");
+        logger.info("getId called");
         return PROVIDER_ID;
     }
 
     @Override
     public void init(Config.Scope config) {
-        logger.debug("init called");
+        logger.info("init called");
         super.init(config);
         this.destinationValidator = DestinationValidator.forProtocolMap(config.getArray("knownProtocols"));
     }
 
     public List<ProviderConfigProperty> getConfigProperties() {
-        logger.debug("getConfigProperties called");
+        logger.info("getConfigProperties called");
         return SSIIdentityProviderConfig.getConfigProperties();
+    }
+
+    @Override
+    public Map<String, String> getOperationalInfo() {
+        Map<String, String> ret = new LinkedHashMap<>();
+        ret.put("provider-name", "SSI Provider");
+        return ret;
     }
 }
