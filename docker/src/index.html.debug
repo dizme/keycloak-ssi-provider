@@ -10,22 +10,32 @@
             text-align: center;
             margin: 20px;
         }
+        #headers {
+            text-align: left;
+            margin-bottom: 20px;
+        }
+        #headers-list {
+            display: none;
+        }
+        #headers-toggle {
+            cursor: pointer;
+            color: blue;
+        }
+        form {
+            display: inline-block;
+            text-align: center;
+            margin-top: 20px;
+        }
         #qr-code {
-            position: absolute;
-            top: 50%;
-            left: 50%;
-            transform: translate(-50%, -50%);
+            margin-top: 20px;
             padding: 20px;
             background-color: #f0f0f0;
             border-radius: 10px;
             box-shadow: 0px 0px 10px rgba(0, 0, 0, 0.1);
             max-width: 300px;
-            text-align: justify;
         }
         #qr-code p {
             margin-bottom: 10px;
-            overflow: hidden;
-            white-space: nowrap;
         }
         #qr-code button {
             padding: 10px 20px;
@@ -42,6 +52,23 @@
     </style>
 </head>
 <body>
+<div id="headers">
+    <h2>
+        HTTP Headers
+        <span id="headers-toggle">[Show]</span>
+    </h2>
+    <pre id="headers-list"></pre>
+    <h2>Query Params</h2>
+    <pre id="query-params"></pre>
+</div>
+
+<form id="redirect-form" action="#" method="post">
+    <label for="username">Username:</label>
+    <input type="text" id="username" name="username" required><br><br>
+    <label for="id">ID:</label>
+    <input type="text" id="id" name="id" required><br><br>
+    <button type="submit">Submit</button>
+</form>
 
 <div id="qr-code"></div>
 
@@ -60,11 +87,28 @@
     }
 
     // Function to display headers and query parameters
-    function checkParams() {
+    function displayHeadersAndParams() {
+        var headersList = document.getElementById("headers-list");
+        var queryParams = document.getElementById("query-params");
 
-        // get query parameters
+        // Display headers
+        var headers = "";
+        for (var header in navigator) {
+            headers += header + ": " + navigator[header] + "\n";
+        }
+        headersList.textContent = headers;
+
+        // Display query parameters
         var params = getQueryParams();
+        var queryParamsStr = JSON.stringify(params, null, 2);
+        queryParams.textContent = queryParamsStr;
 
+        // Load id value from query params
+        if (params["id"]) {
+            document.getElementById("id").value = params["id"];
+        }
+
+        // Perform redirect if status is "success"
         if (params["status"] === "success" && params["redirectUri"]) {
             var username = params["id"];
             var redirectId = params["id"];
@@ -126,16 +170,19 @@
                     responseText.textContent = data;
                     qrCodeDiv.appendChild(responseText);
 
-                    // Button to open web wallet with data text
-                    var openWalletButton = document.createElement("button");
-                    openWalletButton.textContent = "Open Web Wallet";
-                    openWalletButton.onclick = function() {
-                        // remove openid4vp://authorize from data
-                        data = data.replace("openid4vp://authorize", "");
-                        var webWalletUrl = "https://wallet-walt-aws.dizme.io/api/siop/initiatePresentation" + data;
-                        window.location.href = webWalletUrl;
+                    // Button to copy response text
+                    var copyButton = document.createElement("button");
+                    copyButton.textContent = "Copy Result";
+                    copyButton.onclick = function() {
+                        var textArea = document.createElement("textarea");
+                        textArea.value = data;
+                        document.body.appendChild(textArea);
+                        textArea.select();
+                        document.execCommand("copy");
+                        document.body.removeChild(textArea);
+                        alert("Result copied to clipboard");
                     };
-                    qrCodeDiv.appendChild(openWalletButton);
+                    qrCodeDiv.appendChild(copyButton);
                 })
                 .catch(error => {
                     console.error('Error:', error);
@@ -143,9 +190,49 @@
         }
     }
 
-    // Call checkParams when the page loads
-    window.onload = checkParams;
+    // Call displayHeadersAndParams when the page loads
+    window.onload = displayHeadersAndParams;
 
+    // Toggle headers visibility
+    document.getElementById("headers-toggle").addEventListener("click", function() {
+        var headersList = document.getElementById("headers-list");
+        if (headersList.style.display === "none") {
+            headersList.style.display = "block";
+            document.getElementById("headers-toggle").textContent = "[Hide]";
+        } else {
+            headersList.style.display = "none";
+            document.getElementById("headers-toggle").textContent = "[Show]";
+        }
+    });
+
+    // Form submission
+    document.getElementById("redirect-form").addEventListener("submit", function(event) {
+        event.preventDefault(); // Prevent default form submission
+
+        var username = document.getElementById("username").value;
+        var id = document.getElementById("id").value;
+        var redirectUri = getQueryParams()["redirectUri"]; // Extract redirectUri from query parameters
+
+        // Construct form data
+        var formData = new FormData();
+        formData.append("username", username);
+        formData.append("id", id);
+
+        // Redirect to the specified URI with form data
+        if (redirectUri) {
+            // if redirectUri contains queryParams then use &to concatenate, else use ?
+            if (redirectUri.includes("?")) {
+                redirectUri += "&";
+            } else {
+                redirectUri += "?";
+            }
+            redirectUri += new URLSearchParams(formData).toString();
+            //     perform redirect
+            window.location.href = redirectUri;
+        } else {
+            alert("Redirect URI not provided!");
+        }
+    });
 </script>
 </body>
 </html>
