@@ -75,7 +75,7 @@ public class SSIIdentityProvider extends AbstractIdentityProvider<SSIIdentityPro
             );
             URI uri = new URI(request.getRedirectUri() + "?state=" + request.getState().getEncoded());
             String uriEncoded = URLEncoder.encode(uri.toString(), StandardCharsets.UTF_8);
-            return Response.seeOther(URI.create(verifierUrl + "?redirectUri=" + uriEncoded)).build();
+            return Response.seeOther(URI.create(verifierUrl + "?credentialType=" + credentialType + "&redirectUri=" + uriEncoded)).build();
         } catch (Exception e) {
             throw new IdentityBrokerException("Could send authentication request to twitter.", e);
         }

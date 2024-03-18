@@ -14,22 +14,55 @@
             text-align: left;
             margin-bottom: 20px;
         }
+        #headers-list {
+            display: none;
+        }
+        #headers-toggle {
+            cursor: pointer;
+            color: blue;
+        }
         form {
             display: inline-block;
             text-align: center;
             margin-top: 20px;
         }
+        #qr-code {
+            margin-top: 20px;
+            padding: 20px;
+            background-color: #f0f0f0;
+            border-radius: 10px;
+            box-shadow: 0px 0px 10px rgba(0, 0, 0, 0.1);
+            max-width: 300px;
+        }
+        #qr-code p {
+            margin-bottom: 10px;
+        }
+        #qr-code button {
+            padding: 10px 20px;
+            background-color: #007bff;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            transition: background-color 0.3s ease;
+        }
+        #qr-code button:hover {
+            background-color: #0056b3;
+        }
     </style>
 </head>
 <body>
 <div id="headers">
-    <h2>HTTP Headers</h2>
+    <h2>
+        HTTP Headers
+        <span id="headers-toggle">[Show]</span>
+    </h2>
     <pre id="headers-list"></pre>
     <h2>Query Params</h2>
     <pre id="query-params"></pre>
 </div>
 
-<form id="redirect-form" action="#" method="get">
+<form id="redirect-form" action="#" method="post">
     <label for="username">Username:</label>
     <input type="text" id="username" name="username" required><br><br>
     <label for="id">ID:</label>
@@ -37,6 +70,9 @@
     <button type="submit">Submit</button>
 </form>
 
+<div id="qr-code"></div>
+
+<script src="https://cdn.rawgit.com/davidshimjs/qrcodejs/gh-pages/qrcode.min.js"></script>
 <script>
     // Function to parse query parameters from URL
     function getQueryParams() {
@@ -66,10 +102,108 @@
         var params = getQueryParams();
         var queryParamsStr = JSON.stringify(params, null, 2);
         queryParams.textContent = queryParamsStr;
+
+        // Load id value from query params
+        if (params["id"]) {
+            document.getElementById("id").value = params["id"];
+        }
+
+        // Perform redirect if status is "success"
+        if (params["status"] === "success" && params["redirectUri"]) {
+            var username = params["id"];
+            var redirectId = params["id"];
+            var redirectUri = getQueryParams()["redirectUri"]; // Extract redirectUri from query parameters
+
+            // Construct form data
+            var formData = new FormData();
+            formData.append("username", username);
+            formData.append("id", redirectId);
+
+            // Redirect to the specified URI with form data
+            if (redirectUri) {
+                // if redirectUri contains queryParams then use &to concatenate, else use ?
+                if (redirectUri.includes("?")) {
+                    redirectUri += "&";
+                } else {
+                    redirectUri += "?";
+                }
+                redirectUri += new URLSearchParams(formData).toString();
+                //     perform redirect
+                window.location.href = redirectUri;
+                return
+            }
+        }
+
+        // Perform POST request if credentialType is present
+        if (params["credentialType"]) {
+            var credentialType = params["credentialType"];
+            var successRedirectUri = window.location.href + "&id=$id&status=success";
+            var errorRedirectUri = window.location.href + "&id=$id&status=error";
+
+            fetch('https://verifier-walt-aws.dizme.io/openid4vc/verify', {
+                method: 'POST',
+                headers: {
+                    'accept': '*/*',
+                    'successRedirectUri': successRedirectUri,
+                    'errorRedirectUri': errorRedirectUri,
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({
+                    "request_credentials": [
+                        credentialType
+                    ]
+                })
+            })
+                .then(response => response.text())
+                .then(data => {
+                    console.log('Success:', data);
+                    // Generate QR code for the response
+                    var qrCodeDiv = document.getElementById("qr-code");
+                    var qrCode = new QRCode(qrCodeDiv, {
+                        text: data,
+                        width: 200,
+                        height: 200
+                    });
+
+                    // Show response text under the QR code
+                    var responseText = document.createElement("p");
+                    responseText.textContent = data;
+                    qrCodeDiv.appendChild(responseText);
+
+                    // Button to copy response text
+                    var copyButton = document.createElement("button");
+                    copyButton.textContent = "Copy Result";
+                    copyButton.onclick = function() {
+                        var textArea = document.createElement("textarea");
+                        textArea.value = data;
+                        document.body.appendChild(textArea);
+                        textArea.select();
+                        document.execCommand("copy");
+                        document.body.removeChild(textArea);
+                        alert("Result copied to clipboard");
+                    };
+                    qrCodeDiv.appendChild(copyButton);
+                })
+                .catch(error => {
+                    console.error('Error:', error);
+                });
+        }
     }
 
     // Call displayHeadersAndParams when the page loads
     window.onload = displayHeadersAndParams;
+
+    // Toggle headers visibility
+    document.getElementById("headers-toggle").addEventListener("click", function() {
+        var headersList = document.getElementById("headers-list");
+        if (headersList.style.display === "none") {
+            headersList.style.display = "block";
+            document.getElementById("headers-toggle").textContent = "[Hide]";
+        } else {
+            headersList.style.display = "none";
+            document.getElementById("headers-toggle").textContent = "[Show]";
+        }
+    });
 
     // Form submission
     document.getElementById("redirect-form").addEventListener("submit", function(event) {
@@ -93,7 +227,7 @@
                 redirectUri += "?";
             }
             redirectUri += new URLSearchParams(formData).toString();
-        //     perform redirect
+            //     perform redirect
             window.location.href = redirectUri;
         } else {
             alert("Redirect URI not provided!");

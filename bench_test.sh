@@ -1,7 +1,5 @@
 #!/bin/zsh
 
-KEYCLOAK_RELEASE_DIR=../keycloak-23.0.7
-
 function ctrl_c() {
   cd ..
 }
@@ -9,6 +7,13 @@ function ctrl_c() {
 rm -rf target
 
 mvn clean package
+
+# check if keycloak release dir variable exported
+if [ -z "$KEYCLOAK_RELEASE_DIR" ]; then
+  echo "KEYCLOAK_RELEASE_DIR is not set"
+  KEYCLOAK_RELEASE_DIR=../keycloak-23.0.7
+fi
+
 
 echo "Copying jar to keycloak release dir"
 cp target/*.jar $KEYCLOAK_RELEASE_DIR/providers/
