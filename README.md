@@ -2,7 +2,7 @@
 
 This is a Keycloak provider that allows you to use a W3C SDJWT Credential to authenticate users in Keycloak.
 
-## How to use
+## Build
 
 1. clone this repository
 2. run 'mvn clean package' in the root directory
