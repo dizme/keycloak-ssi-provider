@@ -67,6 +67,8 @@ function checkParams() {
     // get query parameters
     var params = getQueryParams();
 
+    document.getElementById("credentyalType").textContent = params["credentialType"];
+
     // Perform POST request if credentialType is present
     if (params["credentialType"]) {
         var credentialType = params["credentialType"];
