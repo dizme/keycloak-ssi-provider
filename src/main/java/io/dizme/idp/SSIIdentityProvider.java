@@ -31,11 +31,14 @@ public class SSIIdentityProvider extends AbstractIdentityProvider<SSIIdentityPro
 
     private final String credentialType;
 
+    private final String idpUrl;
+
     public SSIIdentityProvider(KeycloakSession session, SSIIdentityProviderConfig config, DestinationValidator destinationValidator) {
         super(session, config);
         this.destinationValidator = destinationValidator;
         this.verifierUrl = config.getVerifierUrl();
         this.credentialType = config.getCredentialType();
+        this.idpUrl = config.getIdpUrl();
         logger.debug("SSIIdentityProvider() called");
 
     }
@@ -43,31 +46,12 @@ public class SSIIdentityProvider extends AbstractIdentityProvider<SSIIdentityPro
     @Override
     public Object callback(RealmModel realm, AuthenticationCallback callback, EventBuilder event) {
         logger.debug("callback called");
-        // TODO: Define usermodel based on sessionid received in query param Or cookie
-        // session.users().addUser(realm, "user");
-//        String username = session.getContext().getHttpRequest().getUri().getQueryParameters().get("username").get(0);
-//        String id = session.getContext().getHttpRequest().getUri().getQueryParameters().get("id").get(0);
-//        String state = session.getContext().getHttpRequest().getUri().getQueryParameters().get("state").get(0);
-
         return new SSIEndpoint(session, this, getConfig(), callback, destinationValidator);
     }
 
     @Override
     public Response performLogin(AuthenticationRequest request) {
         logger.debug("performLogin called");
-//        try {
-////            Perform redirect verso l'idp
-////            Response.seeOther(new URI(verifierUrl+"/openid4vc/verify")).build();
-////            TODO: study options
-////            Restituire html con form auto submit
-//            URI uri = new URI(verifierUrl+"/openid4vc/verify");
-////            Creare la callback
-//            String redirectUrl = request.getRedirectUri();
-//            return Response.seeOther(new URI(verifierUrl+"?redirectUrl="+redirectUrl)).build();
-//        } catch (Exception e) {
-//            throw new IdentityBrokerException("Could send authentication request.", e);
-//        }
-
         try {
             session.setAttribute(
                     "callbackUri",
@@ -75,9 +59,9 @@ public class SSIIdentityProvider extends AbstractIdentityProvider<SSIIdentityPro
             );
             URI uri = new URI(request.getRedirectUri() + "?state=" + request.getState().getEncoded());
             String uriEncoded = URLEncoder.encode(uri.toString(), StandardCharsets.UTF_8);
-            return Response.seeOther(URI.create(verifierUrl + "?credentialType=" + credentialType + "&redirectUri=" + uriEncoded)).build();
+            return Response.seeOther(URI.create(idpUrl + "?credentialType=" + credentialType + "&redirectUri=" + uriEncoded)).build();
         } catch (Exception e) {
-            throw new IdentityBrokerException("Could send authentication request to twitter.", e);
+            throw new IdentityBrokerException("Could send authentication request to SSI Provider.", e);
         }
     }
 

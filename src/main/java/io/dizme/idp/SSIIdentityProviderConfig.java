@@ -14,6 +14,8 @@ public class SSIIdentityProviderConfig extends IdentityProviderModel {
 
     public static final String CREDENTIAL_TYPE = "credentialType";
 
+    public static final String IDP_URL = "idpUrl";
+
     public SSIIdentityProviderConfig() {
         logger.info("SSIIdentityProviderConfig() called");
     }
@@ -40,9 +42,24 @@ public class SSIIdentityProviderConfig extends IdentityProviderModel {
         getConfig().put(CREDENTIAL_TYPE, credentialType);
     }
 
+    public String getIdpUrl() {
+        return getConfig().get(IDP_URL);
+    }
+
+    public void setIdpUrl(String idpUrl) {
+        getConfig().put(IDP_URL, idpUrl);
+    }
+
     public static List<ProviderConfigProperty> getConfigProperties() {
         logger.info("getConfigProperties called");
         return ProviderConfigurationBuilder.create()
+
+                .property()
+                .name(IDP_URL)
+                .type(ProviderConfigProperty.STRING_TYPE)
+                .label("Idp Url")
+                .helpText("Insert Idp Url")
+                .add()
 
                 .property()
                 .name(VERIFIER_URL)

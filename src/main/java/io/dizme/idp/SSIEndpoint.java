@@ -1,10 +1,20 @@
 package io.dizme.idp;
 
+import com.authlete.sd.SDJWT;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import io.dizme.idp.models.VerificationSessionInfo;
 import jakarta.ws.rs.*;
 import jakarta.ws.rs.core.Context;
 import jakarta.ws.rs.core.HttpHeaders;
 import jakarta.ws.rs.core.MediaType;
 import jakarta.ws.rs.core.Response;
+import okhttp3.OkHttpClient;
+import okhttp3.Request;
+import org.apache.http.client.methods.CloseableHttpResponse;
+import org.apache.http.client.methods.HttpGet;
+import org.apache.http.impl.client.CloseableHttpClient;
+import org.apache.http.impl.client.HttpClients;
+import org.apache.http.util.EntityUtils;
 import org.jboss.logging.Logger;
 import org.jboss.resteasy.annotations.cache.NoCache;
 import org.keycloak.broker.provider.BrokeredIdentityContext;
@@ -13,9 +23,10 @@ import org.keycloak.common.ClientConnection;
 import org.keycloak.events.EventBuilder;
 import org.keycloak.models.KeycloakSession;
 import org.keycloak.models.RealmModel;
-import org.keycloak.saml.common.constants.GeneralConstants;
 import org.keycloak.saml.validators.DestinationValidator;
 import org.keycloak.sessions.AuthenticationSessionModel;
+
+import java.io.IOException;
 
 public class SSIEndpoint {
     protected static final Logger logger = Logger.getLogger(SSIEndpoint.class);
@@ -61,7 +72,7 @@ public class SSIEndpoint {
     public Response redirectBinding(@QueryParam("username") String username,
                                     @QueryParam("id") String id,
                                     @QueryParam("state") String state)  {
-        return execute(username, id, state);
+        return execute(id, state);
     }
 
     @POST
@@ -69,7 +80,7 @@ public class SSIEndpoint {
     public Response postBinding(@FormParam("username") String username,
                                 @FormParam("id") String id,
                                 @FormParam("state") String state) {
-        return execute(username, id, state);
+        return execute(id, state);
     }
 
     @Path("clients/{client_id}")
@@ -78,7 +89,7 @@ public class SSIEndpoint {
                                     @QueryParam("id") String id,
                                     @QueryParam("state") String state,
                                     @PathParam("client_id") String clientId)  {
-        return execute(username, id, state);
+        return execute(id, state);
     }
 
 
@@ -91,30 +102,63 @@ public class SSIEndpoint {
                                 @FormParam("id") String id,
                                 @FormParam("state") String state,
                                 @PathParam("client_id") String clientId) {
-        return execute(username, id, state);
+        return execute(id, state);
     }
 
-    private Response execute(String username, String id, String state) {
-        logger.debug("username: " + username);
-        logger.debug("id: " + id);
-        logger.debug("state: " + state);
+    private Response execute(String id, String state) {
+        logger.debug("Verification id from SSI Idp: " + id);
+        try {
+            VerificationSessionInfo sessionInfo = getTokenResponse(id);
+            String verifiableCredential = sessionInfo.policyResults.results.get(0).policies.get(0).result.vp.verifiableCredentials.get(0);
+//            logger.debug("Verifiable Credential: " + verifiableCredential);
 
-        BrokeredIdentityContext identity = new BrokeredIdentityContext(username);
-        identity.setUsername(username);
-        identity.setModelUsername(username);
-        identity.setEmail("test@dizme.io");
-        identity.setUserAttribute("username_attr", username);
-        identity.setUserAttribute("id_attr", id);
+            BrokeredIdentityContext identity = new BrokeredIdentityContext(id);
+            identity.setUsername(id);
+            identity.setModelUsername(id);
+            identity.setEmail("test@dizme.io");
 
-        String brokerUserId = config.getAlias() + "." + username;
-        identity.setBrokerUserId(brokerUserId);
+            String brokerUserId = config.getAlias() + "." + id;
+            identity.setBrokerUserId(brokerUserId);
 
-        identity.setIdpConfig(config);
-        identity.setIdp(provider);
-        AuthenticationSessionModel authSession = callback.getAndVerifyAuthenticationSession(state);
-        session.getContext().setAuthenticationSession(authSession);
-        identity.setAuthenticationSession(authSession);
+            identity.setIdpConfig(config);
+            identity.setIdp(provider);
+            AuthenticationSessionModel authSession = callback.getAndVerifyAuthenticationSession(state);
+            session.getContext().setAuthenticationSession(authSession);
+            identity.setAuthenticationSession(authSession);
 
-        return callback.authenticated(identity);
+            // Add User attribute from disclosed claims
+            SDJWT sdJwt = SDJWT.parse(verifiableCredential);
+            sdJwt.getDisclosures().forEach(disclosure -> {
+                identity.setUserAttribute(config.getCredentialType()+"_"+disclosure.getClaimName(), disclosure.getClaimValue().toString());
+            });
+
+
+            return callback.authenticated(identity);
+        } catch (IllegalArgumentException iae) {
+            logger.error("Error parsing SDJWT", iae);
+            return callback.error(Response.Status.BAD_REQUEST.toString() + ": No claim found in the credential disclosure");
+        } catch (Exception e) {
+            logger.error("Error retrieving VP token", e);
+            return callback.error(Response.Status.INTERNAL_SERVER_ERROR.toString());
+        }
+
+    }
+
+    private VerificationSessionInfo getTokenResponse(String id) throws Exception {
+        try(CloseableHttpClient client = HttpClients.createDefault();) {
+            HttpGet request = new HttpGet(config.getVerifierUrl() + "/openid4vc/session/" + id);
+            try (CloseableHttpResponse response = client.execute(request);) {
+                if (response.getStatusLine().getStatusCode() != 200) {
+                    throw new IOException("Error retrieving VP token");
+                }
+                String responseBody = EntityUtils.toString(response.getEntity());
+                logger.debug("VP token: " + responseBody);
+
+                ObjectMapper mapper = new ObjectMapper();
+
+                // Parse JSON to ResponseObject
+                return mapper.readValue(responseBody, VerificationSessionInfo.class);
+            }
+        }
     }
 }

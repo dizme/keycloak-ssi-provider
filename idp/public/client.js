@@ -22,11 +22,9 @@ function pollEndpoint(verification_state) {
                 if (data.tokenResponse) {
                     // Token response received, stop polling
                     clearInterval(intervalId);
-                    // Display tokenResponse in textarea
-                    document.getElementById("token-response").value = JSON.stringify(data.tokenResponse, null, 2);
                     // Perform any further actions with the token response here
                     console.log('Token response received:', data.tokenResponse);
-                    performRedirect(data.tokenResponse);
+                    performRedirect(verification_state);
                 }
             })
             .catch(error => {
@@ -38,16 +36,14 @@ function pollEndpoint(verification_state) {
     intervalId = setInterval(fetchData, 1000);
 }
 
-function performRedirect(tokenResponse) {
+function performRedirect(verification_state) {
     var params = getQueryParams();
-    if (params["status"] === "success" && params["redirectUri"]) {
-        var username = params["id"];
-        var redirectId = params["id"];
+    if (params["redirectUri"]) {
+        var redirectId = verification_state;
         var redirectUri = params["redirectUri"];
 
         // Construct form data
         var formData = new FormData();
-        formData.append("username", username);
         formData.append("id", redirectId);
 
         // Redirect to the specified URI with form data
@@ -74,18 +70,10 @@ function checkParams() {
     // Perform POST request if credentialType is present
     if (params["credentialType"]) {
         var credentialType = params["credentialType"];
-        let successRedirectUri;
-        let errorRedirectUri;
-        // if on web browser add headers
-        if (typeof window !== 'undefined') {
-            successRedirectUri = window.location.href + "&id=$id&status=success";
-            errorRedirectUri = window.location.href + "&id=$id&status=error";
-        } else {
-            successRedirectUri = window.location.origin + "/callback/success";
-            errorRedirectUri = window.location.origin + "/callback/error";
-        }
+        let successRedirectUri = window.location.origin + "/callback/success";
+        let errorRedirectUri = window.location.origin + "/callback/error";
 
-        headers = {
+        let headers = {
             'accept': '*/*',
             'Content-Type': 'application/json',
             'successRedirectUri': successRedirectUri,
@@ -124,7 +112,7 @@ function checkParams() {
                 // Button to copy response text
                 var copyDataButton = document.getElementById("copy-button");
                 copyDataButton.textContent = "Copy to clipboard";
-                copyDataButton.onclick = function() {
+                copyDataButton.onclick = function () {
                     navigator.clipboard.writeText(data)
                         .then(() => alert("Verification URI copied to clipboard"))
                         .catch(err => console.error('Error copying result: ', err));
@@ -133,11 +121,11 @@ function checkParams() {
                 // Button to open web wallet with data text
                 var openWalletButton = document.getElementById("open-wallet-button");
                 openWalletButton.textContent = "Open Web Wallet";
-                openWalletButton.onclick = function() {
+                openWalletButton.onclick = function () {
                     // remove openid4vp://authorize from data
                     data = data.replace("openid4vp://authorize", "");
                     var webWalletUrl = "https://wallet-walt-aws.dizme.io/api/siop/initiatePresentation" + data;
-                    window.location.href = webWalletUrl;
+                    window.open(webWalletUrl, "_blank");
                 };
             })
             .catch(error => {

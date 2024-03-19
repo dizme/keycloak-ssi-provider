@@ -14,6 +14,7 @@
     <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
     <version.keycloak>23.0.7</version.keycloak>
     <project.artifact.outputDirectory>${project.build.directory}/../../keycloak-23.0.7/providers/</project.artifact.outputDirectory>
+    <sd-jwt.version>1.4</sd-jwt.version>
   </properties>
 
   <dependencies>
@@ -65,6 +66,29 @@
       <version>${version.keycloak}</version>
       <scope>provided</scope>
     </dependency>
+    <dependency>
+      <groupId>org.apache.maven.plugins</groupId>
+      <artifactId>maven-shade-plugin</artifactId>
+      <version>3.5.2</version>
+    </dependency>
+
+    <dependency>
+      <groupId>com.authlete</groupId>
+      <artifactId>sd-jwt</artifactId>
+      <version>${sd-jwt.version}</version>
+    </dependency>
+    <!-- https://mvnrepository.com/artifact/com.squareup.okhttp3/okhttp -->
+    <dependency>
+      <groupId>com.squareup.okhttp3</groupId>
+      <artifactId>okhttp</artifactId>
+      <version>3.12.0</version>
+    </dependency>
+    <!-- https://mvnrepository.com/artifact/com.google.code.gson/gson -->
+    <dependency>
+      <groupId>com.google.code.gson</groupId>
+      <artifactId>gson</artifactId>
+      <version>2.10.1</version>
+    </dependency>
   </dependencies>
 
   <build>
@@ -87,6 +111,43 @@
         <configuration>
           <release>11</release>
         </configuration>
+      </plugin>
+      <plugin>
+        <groupId>org.apache.maven.plugins</groupId>
+        <artifactId>maven-shade-plugin</artifactId>
+        <version>3.5.2</version>
+        <configuration>
+          <minimizeJar>true</minimizeJar>
+          <artifactSet>
+            <includes>
+              <include>com.authlete:sd-jwt</include>
+              <include>com.squareup.okhttp3:okhttp</include>
+              <include>com.google.code.gson:gson</include>
+            </includes>
+          </artifactSet>
+          <filters>
+            <filter>
+              <artifact>*:*</artifact>
+              <excludes>
+                <exclude>META-INF/license/**</exclude>
+                <exclude>META-INF/*</exclude>
+                <exclude>META-INF/maven/**</exclude>
+                <exclude>LICENSE</exclude>
+                <exclude>NOTICE</exclude>
+                <exclude>/*.txt</exclude>
+                <exclude>build.properties</exclude>
+              </excludes>
+            </filter>
+          </filters>
+        </configuration>
+        <executions>
+          <execution>
+            <phase>package</phase>
+            <goals>
+              <goal>shade</goal>
+            </goals>
+          </execution>
+        </executions>
       </plugin>
     </plugins>
   </build>
