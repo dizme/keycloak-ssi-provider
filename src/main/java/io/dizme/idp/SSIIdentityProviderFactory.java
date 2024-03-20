@@ -18,7 +18,7 @@ import java.util.Map;
 public class SSIIdentityProviderFactory extends AbstractIdentityProviderFactory<SSIIdentityProvider> implements ConfiguredProvider, ServerInfoAwareProviderFactory {
     protected static final Logger logger = Logger.getLogger(SSIIdentityProviderFactory.class);
 
-    public static final String PROVIDER_ID = "ssi-verifier";
+    public static final String PROVIDER_ID = "ssi-provider";
 
     private DestinationValidator destinationValidator;
 
@@ -27,7 +27,7 @@ public class SSIIdentityProviderFactory extends AbstractIdentityProviderFactory<
     @Override
     public String getName() {
         logger.info("getName called");
-        return "SSI Verifier";
+        return "SSI Provider";
     }
 
     @Override
