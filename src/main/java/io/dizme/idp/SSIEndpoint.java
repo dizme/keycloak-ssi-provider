@@ -1,5 +1,6 @@
 package io.dizme.idp;
 
+import com.authlete.sd.Disclosure;
 import com.authlete.sd.SDJWT;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.dizme.idp.models.VerificationSessionInfo;
@@ -27,6 +28,9 @@ import org.keycloak.saml.validators.DestinationValidator;
 import org.keycloak.sessions.AuthenticationSessionModel;
 
 import java.io.IOException;
+import java.util.Arrays;
+import java.util.List;
+import java.util.stream.Collectors;
 
 public class SSIEndpoint {
     protected static final Logger logger = Logger.getLogger(SSIEndpoint.class);
@@ -127,9 +131,10 @@ public class SSIEndpoint {
             identity.setAuthenticationSession(authSession);
 
             // Add User attribute from disclosed claims
-            SDJWT sdJwt = SDJWT.parse(verifiableCredential);
+            SDJWT sdJwt = parseFixed(verifiableCredential);
             sdJwt.getDisclosures().forEach(disclosure -> {
                 identity.setUserAttribute(config.getCredentialType()+"_"+disclosure.getClaimName(), disclosure.getClaimValue().toString());
+//                logger.debug("Adding user attribute: " + config.getCredentialType()+"_"+disclosure.getClaimName() + " with value: " + disclosure.getClaimValue().toString());
             });
 
 
@@ -152,12 +157,43 @@ public class SSIEndpoint {
                     throw new IOException("Error retrieving VP token");
                 }
                 String responseBody = EntityUtils.toString(response.getEntity());
-                logger.debug("VP token: " + responseBody);
+//                logger.debug("VP token: " + responseBody);
 
                 ObjectMapper mapper = new ObjectMapper();
 
                 // Parse JSON to ResponseObject
                 return mapper.readValue(responseBody, VerificationSessionInfo.class);
+            }
+        }
+    }
+
+    public static SDJWT parseFixed(String input) {
+        if (input == null) {
+            return null;
+        } else {
+            String[] elements = input.split("~", -1);
+            int lastIndex = elements.length - 1;
+
+            for(int i = 0; i < lastIndex; ++i) {
+                if (elements[i].isEmpty()) {
+                    throw new IllegalArgumentException("The SD-JWT is malformed.");
+                }
+            }
+
+            if (elements.length < 2) {
+                throw new IllegalArgumentException("The SD-JWT is malformed.");
+            } else {
+                String credentialJwt = elements[0];
+                String bindingJwt = input.endsWith("~") ? null : elements[lastIndex];
+
+                List disclosures;
+                try {
+                    disclosures = (List) Arrays.asList(elements).subList(1, elements.length).stream().map(Disclosure::parse).collect(Collectors.toList());
+                } catch (Exception var7) {
+                    throw new IllegalArgumentException("Failed to parse disclosures.", var7);
+                }
+
+                return new SDJWT(credentialJwt, disclosures, bindingJwt);
             }
         }
     }
