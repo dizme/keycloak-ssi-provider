@@ -38,6 +38,6 @@ build/
 .DS_Store
 
 ### Docker related files ###
-idp/h2
-idp/plugins/*
-!idp/plugins/.gitkeep
+plain-idp/h2
+plain-idp/plugins/*
+!plain-idp/plugins/.gitkeep
