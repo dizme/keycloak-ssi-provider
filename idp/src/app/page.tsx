@@ -13,8 +13,12 @@ const Page: NextPage = () => {
   const [qrValue, setQrValue] = useState<string>('');
   const [credentialType, setCredentialType] = useState<string>('');
   const [loading, setLoading] = useState(true);
+  const [verifierUrl, setVerifierUrl] = useState('');
+  const [walletUrl, setWalletUrl] = useState('');
 
   useEffect(() => {
+    setVerifierUrl(process.env.NEXT_PUBLIC_VERIFIER_URL || '');
+    setWalletUrl(process.env.NEXT_PUBLIC_WALLET_URL || '');
     const params = new URLSearchParams(window.location.search);
     const credentialType = params.get('credentialType');
     setCredentialType(credentialType || '');
@@ -28,7 +32,7 @@ const Page: NextPage = () => {
     const errorRedirectUri = `${window.location.origin}/callback/error`;
 
     try {
-      const response = await fetch('https://verifier-walt-aws.dizme.io/openid4vc/verify', {
+      const response = await fetch(`${process.env.NEXT_PUBLIC_VERIFIER_URL}/openid4vc/verify`, {
         method: 'POST',
         headers: {
           'accept': '*/*',
@@ -54,7 +58,7 @@ const Page: NextPage = () => {
 
   const pollEndpoint = (verification_state: string) => {
     const intervalId = setInterval(() => {
-      fetch(`https://verifier-walt-aws.dizme.io/openid4vc/session/${verification_state}`)
+      fetch(`${process.env.NEXT_PUBLIC_VERIFIER_URL}/openid4vc/session/${verification_state}`)
           .then(response => response.json())
           .then((data: TokenResponse) => {
             if (data.tokenResponse) {
@@ -98,7 +102,7 @@ const Page: NextPage = () => {
 
   const openWebWallet = () => {
     let walletUrl = qrValue.replace("openid4vp://authorize", "");
-    walletUrl = `https://wallet-walt-aws.dizme.io/api/siop/initiatePresentation${walletUrl}`;
+    walletUrl = `${process.env.NEXT_PUBLIC_WALLET_URL}/api/siop/initiatePresentation${walletUrl}`;
     window.open(walletUrl, "_blank");
   };
 
