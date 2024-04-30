@@ -2,7 +2,10 @@
 
 This is a Keycloak provider that allows you to use a W3C SDJWT Credential to authenticate users in Keycloak.
 
-## Build
+## Build and run this repository (Recommended)
+This is the recommended way to start using this repository, you can also configure it manually but in the future the manual configuration will be heavily edited
+
+### Build SSI Plugin
 
 1. clone this repository
 2. run 'mvn clean package' in the root directory
@@ -17,7 +20,14 @@ The directory `idp` contains a docker-compose file that launches the IDP and the
 1. Go to the `idp` directory
 2. Run `docker-compose up -d`
 
-## How to configure
+### Launching KeyCloak with provided realm
+
+This repository also contain a preconfigured keycloak deployment. To run:
+
+1. Go to the `docker` directory
+2. Run `docker-compose up -d`
+
+## How to configure manually
 
 1. Go to the Keycloak admin console
 2. Go to the realm you want to configure
