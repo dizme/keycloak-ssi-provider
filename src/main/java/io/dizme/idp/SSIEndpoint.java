@@ -5,10 +5,7 @@ import com.authlete.sd.SDJWT;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.dizme.idp.models.VerificationSessionInfo;
 import jakarta.ws.rs.*;
-import jakarta.ws.rs.core.Context;
-import jakarta.ws.rs.core.HttpHeaders;
-import jakarta.ws.rs.core.MediaType;
-import jakarta.ws.rs.core.Response;
+import jakarta.ws.rs.core.*;
 import okhttp3.OkHttpClient;
 import okhttp3.Request;
 import org.apache.http.client.methods.CloseableHttpResponse;
@@ -75,16 +72,18 @@ public class SSIEndpoint {
     @GET
     public Response redirectBinding(@QueryParam("username") String username,
                                     @QueryParam("id") String id,
-                                    @QueryParam("state") String state)  {
-        return execute(id, state);
+                                    @QueryParam("state") String state,
+                                    @Context UriInfo uriInfo) {
+        return execute(id, state, uriInfo);
     }
 
     @POST
     @Consumes(MediaType.APPLICATION_FORM_URLENCODED)
     public Response postBinding(@FormParam("username") String username,
                                 @FormParam("id") String id,
-                                @FormParam("state") String state) {
-        return execute(id, state);
+                                @QueryParam("state") String state,
+                                @Context UriInfo uriInfo) {
+        return execute(id, state, uriInfo);
     }
 
     @Path("clients/{client_id}")
@@ -92,8 +91,9 @@ public class SSIEndpoint {
     public Response redirectBinding(@QueryParam("username") String username,
                                     @QueryParam("id") String id,
                                     @QueryParam("state") String state,
-                                    @PathParam("client_id") String clientId)  {
-        return execute(id, state);
+                                    @PathParam("client_id") String clientId,
+                                    @Context UriInfo uriInfo) {
+        return execute(id, state, uriInfo);
     }
 
 
@@ -105,16 +105,20 @@ public class SSIEndpoint {
     public Response postBinding(@FormParam("username") String username,
                                 @FormParam("id") String id,
                                 @FormParam("state") String state,
-                                @PathParam("client_id") String clientId) {
-        return execute(id, state);
+                                @PathParam("client_id") String clientId,
+                                @Context UriInfo uriInfo) {
+        return execute(id, state, uriInfo);
     }
 
-    private Response execute(String id, String state) {
+    private Response execute(String id, String state, UriInfo uriInfo) {
         logger.debug("Verification id from SSI Idp: " + id);
+        // Access all query parameters
+        MultivaluedMap<String, String> queryParams = uriInfo.getQueryParameters();
+
+        // You can now use the queryParams map to access all other query parameters
+        // For example, to print all query parameters:
+        queryParams.forEach((key, value) -> logger.debug("AttirbuteKey: " + key + " AttributeValue: " + value));
         try {
-            VerificationSessionInfo sessionInfo = getTokenResponse(id);
-            String verifiableCredential = sessionInfo.policyResults.results.get(0).policies.get(0).result.vp.verifiableCredentials.get(0);
-//            logger.debug("Verifiable Credential: " + verifiableCredential);
 
             BrokeredIdentityContext identity = new BrokeredIdentityContext(id);
             identity.setUsername(id);
@@ -130,12 +134,19 @@ public class SSIEndpoint {
             session.getContext().setAuthenticationSession(authSession);
             identity.setAuthenticationSession(authSession);
 
+            queryParams.forEach(
+                    (key, value) -> identity.setUserAttribute(config.getCredentialType()+"_"+key, value.toString())
+            );
+
             // Add User attribute from disclosed claims
-            SDJWT sdJwt = parseFixed(verifiableCredential);
-            sdJwt.getDisclosures().forEach(disclosure -> {
-                identity.setUserAttribute(config.getCredentialType()+"_"+disclosure.getClaimName(), disclosure.getClaimValue().toString());
-//                logger.debug("Adding user attribute: " + config.getCredentialType()+"_"+disclosure.getClaimName() + " with value: " + disclosure.getClaimValue().toString());
-            });
+//            VerificationSessionInfo sessionInfo = getTokenResponse(id);
+//            String verifiableCredential = sessionInfo.policyResults.results.get(0).policies.get(0).result.vp.verifiableCredentials.get(0);
+////            logger.debug("Verifiable Credential: " + verifiableCredential);
+//            SDJWT sdJwt = parseFixed(verifiableCredential);
+//            sdJwt.getDisclosures().forEach(disclosure -> {
+//                identity.setUserAttribute(config.getCredentialType()+"_"+disclosure.getClaimName(), disclosure.getClaimValue().toString());
+////                logger.debug("Adding user attribute: " + config.getCredentialType()+"_"+disclosure.getClaimName() + " with value: " + disclosure.getClaimValue().toString());
+//            });
 
 
             return callback.authenticated(identity);
@@ -151,7 +162,7 @@ public class SSIEndpoint {
 
     private VerificationSessionInfo getTokenResponse(String id) throws Exception {
         try(CloseableHttpClient client = HttpClients.createDefault();) {
-            HttpGet request = new HttpGet(config.getVerifierUrl() + "/openid4vc/session/" + id);
+            HttpGet request = new HttpGet(config.getVerifierUrl() + "/ui/presentations/" + id);
             try (CloseableHttpResponse response = client.execute(request);) {
                 if (response.getStatusLine().getStatusCode() != 200) {
                     throw new IOException("Error retrieving VP token");

@@ -1,12 +1,11 @@
 'use client';
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useRef } from 'react';
 import { NextPage } from 'next';
 import QRCode from 'react-qr-code';
 import Button from "@/components/Button";
-
-type TokenResponse = {
-  tokenResponse: string;
-};
+import { v4 as uuid } from "uuid";
+import { getCustomPresentation } from "@/utils/presentationDefinitions";
+import decodeCBOR from "@/utils/cborDecode";
 
 const Page: NextPage = () => {
   const [verificationState, setVerificationState] = useState<string>('');
@@ -15,6 +14,7 @@ const Page: NextPage = () => {
   const [loading, setLoading] = useState(true);
   const [verifierUrl, setVerifierUrl] = useState('');
   const [walletUrl, setWalletUrl] = useState('');
+  const pollingIntervalRef = useRef<number | null>(null);
 
   useEffect(() => {
     setVerifierUrl(process.env.NEXT_PUBLIC_VERIFIER_URL || '');
@@ -23,65 +23,92 @@ const Page: NextPage = () => {
     const credentialType = params.get('credentialType');
     setCredentialType(credentialType || '');
     if (credentialType) {
-      fetchCredentials(credentialType);
+      getVerificationRequestUri(credentialType);
     }
+    return () => {
+      if (pollingIntervalRef.current) {
+        clearInterval(pollingIntervalRef.current);
+      }
+    };
   }, []);
 
-  const fetchCredentials = async (credentialType: string) => {
-    const successRedirectUri = `${window.location.origin}/callback/success`;
-    const errorRedirectUri = `${window.location.origin}/callback/error`;
-
+  const getVerificationRequestUri = async (credentialType: string) => {
+    const presentationDefinition = getCustomPresentation(
+        uuid(),
+        credentialType,
+        credentialType,
+        ["age_over_18", "nationality"]
+    );
     try {
-      const response = await fetch(`${process.env.NEXT_PUBLIC_VERIFIER_URL}/openid4vc/verify`, {
+      const response = await fetch(`${process.env.NEXT_PUBLIC_VERIFIER_URL}/ui/presentations`, {
         method: 'POST',
         headers: {
-          'accept': '*/*',
-          'Content-Type': 'application/json',
-          'successRedirectUri': successRedirectUri,
-          'errorRedirectUri': errorRedirectUri
+          'Content-Type': 'application/json'
         },
         body: JSON.stringify({
-          "request_credentials": [credentialType]
+          type: "vp_token",
+          response_mode: "direct_post",
+          presentation_definition: presentationDefinition,
+          nonce: uuid()
         })
       });
-      const data = await response.text();
-      const queryParamsOfData = new URLSearchParams(data.split("?")[1]);
-      const verificationState = queryParamsOfData.get('state') || '';
-      setVerificationState(verificationState);
-      pollEndpoint(verificationState);
-      setQrValue(data);
+      const data = await response.json();  // Changed from .text() to .json() to parse the JSON response
+
+      // Accessing attributes from the parsed object
+      const presentationId = data.presentation_id;
+      const clientId = data.client_id;
+      const requestUri = data.request_uri;
+      // URI Base and parameters
+      const base = process.env.NEXT_PUBLIC_OIDC4VP_SCHEME;
+      const encodedClientId = encodeURIComponent(clientId);
+      const encodedRequestUri = encodeURIComponent(requestUri);
+
+      // Constructing the custom URI
+      const customUri = `${base}${verifierUrl}?client_id=${encodedClientId}&request_uri=${encodedRequestUri}`;
+
+      console.debug(customUri);
+
+      setVerificationState(presentationId);
+      pollEndpoint(presentationId, credentialType);
+      setQrValue(customUri);
       setLoading(false);
     } catch (error) {
       console.error('Error:', error);
     }
   };
 
-  const pollEndpoint = (verification_state: string) => {
-    const intervalId = setInterval(() => {
-      fetch(`${process.env.NEXT_PUBLIC_VERIFIER_URL}/openid4vc/session/${verification_state}`)
+  const pollEndpoint = (verification_state: string, credentialType: string) => {
+    // Clear any existing interval to avoid duplicates
+    if (pollingIntervalRef.current !== null) {
+      clearInterval(pollingIntervalRef.current);
+    }
+    // Assign the interval and ensure the type is number
+    pollingIntervalRef.current = window.setInterval(() => {
+      fetch(`${process.env.NEXT_PUBLIC_VERIFIER_URL}/ui/presentations/${verification_state}`)
           .then(response => response.json())
-          .then((data: TokenResponse) => {
-            if (data.tokenResponse) {
-              clearInterval(intervalId);
-              console.log('Token response received:', data.tokenResponse);
-              performRedirect(verification_state);
+          .then(async (data: TokenResponse) => {
+            if (data.vp_token) {
+              clearInterval(pollingIntervalRef.current as number);
+              console.log('Token response received:', data.vp_token);
+              const attributes: DecodedElement[] = await decodeCBOR(data.vp_token, credentialType)
+              performRedirect(verification_state, attributes);
             }
           })
           .catch(error => {
             console.error('Error polling data:', error);
           });
-    }, 1000);
+    }, 2000);
   };
 
-  const performRedirect = (verification_state: string) => {
+  const performRedirect = (verification_state: string, attributes: DecodedElement[]) => {
     const params = new URLSearchParams(window.location.search);
     let redirectUri = params.get("redirectUri");
-    var formData = new FormData();
-    formData.append("id", verification_state);
+
     const formDataParams = new URLSearchParams();
-    formData.forEach((value, key) => {
-      formDataParams.append(key, value.toString());
-    });
+    formDataParams.append("id", verification_state);
+    attributes.forEach((element: DecodedElement) => {
+      formDataParams.append(element.elementIdentifier, element.elementValue.toString())
+    })
     if (redirectUri) {
       // if redirectUri contains queryParams then use &to concatenate, else use ?
       if (redirectUri.includes("?")) {
@@ -90,6 +117,7 @@ const Page: NextPage = () => {
         redirectUri += "?";
       }
       redirectUri += formDataParams.toString();
+      console.log(redirectUri)
       //     perform redirect
       window.location.href = redirectUri;
     }

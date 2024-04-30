@@ -33,7 +33,6 @@ public class SSIIdentityProviderFactory extends AbstractIdentityProviderFactory<
     @Override
     public SSIIdentityProvider create(KeycloakSession keycloakSession, IdentityProviderModel identityProviderModel) {
         logger.info("create called");
-        identityProviderModel.getConfig();
         return new SSIIdentityProvider(keycloakSession, new SSIIdentityProviderConfig(identityProviderModel), destinationValidator);
     }
 

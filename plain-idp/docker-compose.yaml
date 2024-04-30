@@ -1,9 +1,0 @@
-version: "3.2"
-
-services:
-  fake-idp:
-    image: nginx:alpine
-    volumes:
-      - ./public:/usr/share/nginx/html
-    ports:
-      - "80:80"

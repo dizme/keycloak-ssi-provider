@@ -78,6 +78,13 @@ public class SSIIdentityProviderConfig extends IdentityProviderModel {
                 .build();
     }
 
+    @Override
+    public void setFirstBrokerLoginFlowId(String firstBrokerLoginFlowId) {
+        super.setFirstBrokerLoginFlowId(null);
+    }
 
-
+    @Override
+    public void setPostBrokerLoginFlowId(String postBrokerLoginFlowId) {
+        super.setPostBrokerLoginFlowId(null);
+    }
 }

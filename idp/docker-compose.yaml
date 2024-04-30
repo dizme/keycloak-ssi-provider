@@ -1,10 +1,13 @@
 version: '3.8'
+
 services:
   keycloak-ssi-idp:
     build:
       context: .
-      dockerfile: Dockerfile
+      dockerfile: ./Dockerfile
+    #    image: public.ecr.aws/dizme.io/keycloak-ssi-idp:latest
+    container_name: keycloak-ssi-idp
     ports:
-      - "80:3000"
+      - "88:3000"
     environment:
       - NODE_ENV=production
