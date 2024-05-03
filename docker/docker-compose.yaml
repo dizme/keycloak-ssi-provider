@@ -7,6 +7,7 @@ services:
     command:
       - start-dev
       - --import-realm
+#      - --log-level=INFO,io.dizme:DEBUG
     environment:
       - KEYCLOAK_ADMIN=admin
       - KEYCLOAK_ADMIN_PASSWORD=password

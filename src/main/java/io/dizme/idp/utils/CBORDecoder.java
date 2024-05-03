@@ -6,7 +6,6 @@ import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.dataformat.cbor.CBORFactory;
 import com.fasterxml.jackson.dataformat.cbor.CBORParser;
-import com.upokecenter.cbor.CBORObject;
 import io.dizme.idp.SSIEndpoint;
 import io.dizme.idp.models.CredentialElement;
 import io.dizme.idp.models.Document;

@@ -1,8 +1,11 @@
 package io.dizme.idp;
 
-import com.authlete.sd.Disclosure;
-import com.authlete.sd.SDJWT;
+import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import io.dizme.idp.exceptions.InvalidVpTokenException;
+import io.dizme.idp.models.CredentialElement;
+import io.dizme.idp.models.TokenResponse;
+import io.dizme.idp.utils.CBORDecoder;
 import jakarta.ws.rs.*;
 import jakarta.ws.rs.core.*;
 import org.apache.http.client.methods.CloseableHttpResponse;
@@ -22,9 +25,7 @@ import org.keycloak.saml.validators.DestinationValidator;
 import org.keycloak.sessions.AuthenticationSessionModel;
 
 import java.io.IOException;
-import java.util.Arrays;
 import java.util.List;
-import java.util.stream.Collectors;
 
 public class SSIEndpoint {
     protected static final Logger logger = Logger.getLogger(SSIEndpoint.class);
@@ -67,9 +68,8 @@ public class SSIEndpoint {
     @GET
     public Response redirectBinding(@QueryParam("username") String username,
                                     @QueryParam("id") String id,
-                                    @QueryParam("state") String state,
-                                    @Context UriInfo uriInfo) {
-        return execute(id, state, uriInfo);
+                                    @QueryParam("state") String state) {
+        return execute(id, state);
     }
 
     @Path("clients/{client_id}")
@@ -77,19 +77,19 @@ public class SSIEndpoint {
     public Response redirectBinding(@QueryParam("username") String username,
                                     @QueryParam("id") String id,
                                     @QueryParam("state") String state,
-                                    @PathParam("client_id") String clientId,
-                                    @Context UriInfo uriInfo) {
-        return execute(id, state, uriInfo);
+                                    @PathParam("client_id") String clientId) {
+        return execute(id, state);
     }
 
 
-    private Response execute(String id, String state, UriInfo uriInfo) {
+    private Response execute(String id, String state) {
         logger.debug("Verification id from SSI Idp: " + id);
-        // Access all query parameters
-        MultivaluedMap<String, String> queryParams = uriInfo.getQueryParameters();
-        queryParams.forEach((key, value) -> logger.debug("AttirbuteKey: " + key + " AttributeValue: " + value));
         try {
-
+            String vpToken = getTokenResponse(id);
+            List<CredentialElement> elements = CBORDecoder.decodeCBOR(vpToken, config.getCredentialType());
+            if (elements.isEmpty()) {
+                throw new InvalidVpTokenException("No claim found in vp token");
+            }
             BrokeredIdentityContext identity = new BrokeredIdentityContext(id);
             identity.setUsername(id);
             identity.setModelUsername(id);
@@ -104,19 +104,44 @@ public class SSIEndpoint {
             session.getContext().setAuthenticationSession(authSession);
             identity.setAuthenticationSession(authSession);
 
-            queryParams.forEach(
-                    (key, value) -> identity.setUserAttribute(config.getCredentialType()+"_"+key, value.toString())
+            elements.forEach(
+                    element -> identity.setUserAttribute(config.getCredentialType()+"_"+element.getElementIdentifier(), element.getElementValue().toString())
             );
 
             return callback.authenticated(identity);
-        } catch (IllegalArgumentException iae) {
-            logger.error("Error parsing SDJWT", iae);
-            return callback.error(Response.Status.BAD_REQUEST.toString() + ": No claim found in the credential disclosure");
+        } catch (InvalidVpTokenException ivpte) {
+            logger.error("Error parsing VpToken", ivpte);
+            return callback.error(Response.Status.BAD_REQUEST + ": " +ivpte.getMessage());
         } catch (Exception e) {
             logger.error("Error retrieving VP token", e);
-            return callback.error(Response.Status.INTERNAL_SERVER_ERROR.toString());
+            return callback.error(Response.Status.INTERNAL_SERVER_ERROR + ": " + e.getMessage());
         }
 
     }
+
+    private String getTokenResponse(String id) throws Exception {
+        try (CloseableHttpClient client = HttpClients.createDefault()) {
+            HttpGet request = new HttpGet(config.getVerifierUrl() + "/ui/presentations/" + id);
+            try (CloseableHttpResponse response = client.execute(request)) {
+                if (response.getStatusLine().getStatusCode() != 200) {
+                    throw new IOException("Error retrieving VP token");
+                }
+                String responseBody = EntityUtils.toString(response.getEntity());
+                logger.debug("VP token response: " + responseBody);
+
+                // Deserialize JSON response to TokenResponse class
+                ObjectMapper mapper = new ObjectMapper();
+                mapper.configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false);
+                TokenResponse tokenResponse = mapper.readValue(responseBody, TokenResponse.class);
+
+                // Retrieve the vp_token from the TokenResponse object
+                String vpToken = tokenResponse.getVpToken();
+                logger.debug("Extracted VP token: " + vpToken);
+                return vpToken;  // Return the vp_token
+            }
+        }
+    }
+
+
 }
 
