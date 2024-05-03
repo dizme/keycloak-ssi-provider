@@ -89,6 +89,17 @@
       <artifactId>gson</artifactId>
       <version>2.10.1</version>
     </dependency>
+    <!-- https://mvnrepository.com/artifact/com.upokecenter/cbor -->
+    <dependency>
+      <groupId>com.upokecenter</groupId>
+      <artifactId>cbor</artifactId>
+      <version>4.5.2</version>
+    </dependency>
+    <dependency>
+      <groupId>com.authlete</groupId>
+      <artifactId>cbor</artifactId>
+      <version>1.4</version>
+    </dependency>
   </dependencies>
 
   <build>
@@ -123,6 +134,7 @@
               <include>com.authlete:sd-jwt</include>
               <include>com.squareup.okhttp3:okhttp</include>
               <include>com.google.code.gson:gson</include>
+              <include>com.upokecenter:cbor</include>
             </includes>
           </artifactSet>
           <filters>

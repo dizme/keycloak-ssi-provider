@@ -43,6 +43,7 @@
               <include>com.authlete:sd-jwt</include>
               <include>com.squareup.okhttp3:okhttp</include>
               <include>com.google.code.gson:gson</include>
+              <include>com.upokecenter:cbor</include>
             </includes>
           </artifactSet>
           <filters>
