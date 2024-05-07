@@ -11,3 +11,6 @@ services:
       - "88:3000"
     environment:
       - NODE_ENV=production
+      - NEXT_PUBLIC_VERIFIER_URL=https://verifier-backend.eudiw.dev
+      - NEXT_PUBLIC_OIDC4VP_SCHEME=eudi-openid4vp://
+      - NEXT_PUBLIC_PRESENTATION_FORMAT=mso_mdoc
