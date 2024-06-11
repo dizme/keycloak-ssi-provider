@@ -47,7 +47,6 @@ const Page: NextPage = () => {
         },
         body: JSON.stringify({
           type: "vp_token",
-          response_mode: "direct_post",
           presentation_definition: presentationDefinition,
           nonce: uuid()
         })
