@@ -47,7 +47,6 @@ const Page: NextPage = () => {
         },
         body: JSON.stringify({
           type: "vp_token",
-          response_mode: "direct_post",
           presentation_definition: presentationDefinition,
           nonce: uuid()
         })
@@ -128,11 +127,11 @@ const Page: NextPage = () => {
     alert("Verification URI copied to clipboard");
   };
 
-  // const openWebWallet = () => {
-  //   let walletUrl = qrValue.replace("openid4vp://authorize", "");
-  //   walletUrl = `${process.env.NEXT_PUBLIC_WALLET_URL}/api/siop/initiatePresentation${walletUrl}`;
-  //   window.open(walletUrl, "_blank");
-  // };
+  const openWallet = () => {
+    // let walletUrl = qrValue.replace("openid4vp://authorize", "");
+    // walletUrl = `${process.env.NEXT_PUBLIC_WALLET_URL}/api/siop/initiatePresentation${walletUrl}`;
+    window.open(qrValue, "_blank");
+  };
 
   return (
       <div className="flex flex-col items-center justify-center bg-gray-50 min-h-screen">
@@ -153,10 +152,10 @@ const Page: NextPage = () => {
                     className="bg-sky-500 hover:bg-sky-700 px-5 py-2 text-sm leading-5 rounded-full font-semibold text-white">
               Copy to Clipboard
             </Button>
-            {/*<Button onClick={openWebWallet}*/}
-            {/*        className="bg-sky-500 hover:bg-sky-700 px-5 py-2 text-sm leading-5 rounded-full font-semibold text-white">*/}
-            {/*  Open Web Wallet*/}
-            {/*</Button>*/}
+            <Button onClick={openWallet}
+                    className="bg-sky-500 hover:bg-sky-700 px-5 py-2 text-sm leading-5 rounded-full font-semibold text-white">
+              Open Web Wallet
+            </Button>
           </div>
         </div>
       </div>

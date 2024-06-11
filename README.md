@@ -38,12 +38,17 @@ The previous setup should already set everything you need. Follow this steps onl
 4. Click on 'Add provider' and select 'SSI Verifier'
 5. Fill the `IDP Url` with the URL of the IDP you want to use (e.g. using provided idp `http://localhost:88`)
 6. Fill the `Credential Type` with the Type of the credential you want to verify.
-7. Click on 'Save'
-8. Go to the 'Authentication' tab
-9. Go to the 'Flows' tab
-10. Select the flow you want to edit or copy (e.g. 'Browser')
-11. Remove every step except from `Cookie` and `Identity Provider Redirector`
-12. Add the 'ssi-verifier' execution as `Identity Provider Redirector -> Default provider` to the flow
-13. Click on 'Save'
-14. Select Action _Bind Flow_
-15. Select the flow you want to use (e.g. 'Browser')
+7. Fill the `Verifier Url` with the URL of the Verifier you want to use (e.g. using provided idp `http://localhost:80`)
+
+> **NOTE:** The verifier referenced by `verifierUrl` **MUST** be the same as the one used by the IDP.  \
+> In the provided examples, the IDP and the Verifier use the [EUDI verifier endpoints](https://verifier-backend.eudiw.dev).
+
+8. Click on 'Save'
+9. Go to the 'Authentication' tab
+10. Go to the 'Flows' tab
+11. Select the flow you want to edit or copy (e.g. 'Browser')
+12. Remove every step except from `Cookie` and `Identity Provider Redirector`
+13. Add the 'ssi-verifier' execution as `Identity Provider Redirector -> Default provider` to the flow
+14. Click on 'Save'
+15. Select Action _Bind Flow_
+16. Select the flow you want to use (e.g. 'Browser')

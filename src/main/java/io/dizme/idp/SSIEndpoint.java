@@ -10,8 +10,11 @@ import jakarta.ws.rs.*;
 import jakarta.ws.rs.core.*;
 import org.apache.http.client.methods.CloseableHttpResponse;
 import org.apache.http.client.methods.HttpGet;
+import org.apache.http.conn.ssl.NoopHostnameVerifier;
+import org.apache.http.conn.ssl.TrustSelfSignedStrategy;
 import org.apache.http.impl.client.CloseableHttpClient;
 import org.apache.http.impl.client.HttpClients;
+import org.apache.http.ssl.SSLContextBuilder;
 import org.apache.http.util.EntityUtils;
 import org.jboss.logging.Logger;
 import org.jboss.resteasy.annotations.cache.NoCache;
@@ -24,7 +27,11 @@ import org.keycloak.models.RealmModel;
 import org.keycloak.saml.validators.DestinationValidator;
 import org.keycloak.sessions.AuthenticationSessionModel;
 
+import javax.net.ssl.SSLContext;
+import java.io.File;
+import java.io.FileInputStream;
 import java.io.IOException;
+import java.security.KeyStore;
 import java.util.List;
 
 public class SSIEndpoint {
@@ -120,7 +127,8 @@ public class SSIEndpoint {
     }
 
     private String getTokenResponse(String id) throws Exception {
-        try (CloseableHttpClient client = HttpClients.createDefault()) {
+//        try (CloseableHttpClient client = HttpClients.createDefault()) {
+        try (CloseableHttpClient client = createHttpClient()) {
             HttpGet request = new HttpGet(config.getVerifierUrl() + "/ui/presentations/" + id);
             try (CloseableHttpResponse response = client.execute(request)) {
                 if (response.getStatusLine().getStatusCode() != 200) {
@@ -141,6 +149,26 @@ public class SSIEndpoint {
             }
         }
     }
+
+    private CloseableHttpClient createHttpClient() throws Exception {
+        // Load the key store
+        KeyStore keyStore = KeyStore.getInstance(KeyStore.getDefaultType());
+        try (FileInputStream instream = new FileInputStream(new File("/Users/dariocastellano/Repository/keycloak-repos/verifier-backend.jks"))) {
+            keyStore.load(instream, "changeit".toCharArray());
+        }
+
+        // Create SSL context
+        SSLContextBuilder builder = SSLContextBuilder.create();
+        builder.loadTrustMaterial(keyStore, new TrustSelfSignedStrategy());
+        SSLContext sslContext = builder.build();
+
+        // Create an HttpClient with the custom SSL context
+        return HttpClients.custom()
+                .setSSLContext(sslContext)
+                .setSSLHostnameVerifier(NoopHostnameVerifier.INSTANCE)
+                .build();
+    }
+
 
 
 }
