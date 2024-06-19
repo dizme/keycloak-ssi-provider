@@ -1,4 +1,5 @@
 version: '3.8'
+name: kc-with-ssi-idp
 
 services:
   keycloak:
@@ -24,12 +25,15 @@ services:
       - ./keycloak/providers/:/opt/keycloak/providers
 
   keycloak-ssi-idp:
-    build:
-      context: ../idp
-      dockerfile: Dockerfile
-    #    image: public.ecr.aws/dizme.io/keycloak-ssi-idp:latest
+#    build:
+#      context: ../idp
+#      dockerfile: Dockerfile
+    image: public.ecr.aws/dizme.io/keycloak-ssi-idp:0.0.1-CL
     container_name: keycloak-ssi-idp
     ports:
       - "88:3000"
     environment:
       - NODE_ENV=production
+      - VERIFIER_URL=https://verifier-backend.eudiw.dev
+      - OIDC4VP_SCHEME=eudi-openid4vp://
+      - PRESENTATION_FORMAT=mso_mdoc
