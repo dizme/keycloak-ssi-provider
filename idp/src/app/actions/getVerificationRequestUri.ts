@@ -34,7 +34,9 @@ export async function getVerificationRequestUri(credentialType: string) {
         const requestUri = data.request_uri;
         const encodedClientId = encodeURIComponent(clientId);
         const encodedRequestUri = encodeURIComponent(requestUri);
-        const customUri = `${OIDC4VP_SCHEME}${VERIFIER_URL}?client_id=${encodedClientId}&request_uri=${encodedRequestUri}`;
+        // Extract the host from VERIFIER_URL
+        const verifierUrlHost = new URL(VERIFIER_URL).host;
+        const customUri = `${OIDC4VP_SCHEME}${verifierUrlHost}?client_id=${encodedClientId}&request_uri=${encodedRequestUri}`;
 
         return {
             presentationId,
