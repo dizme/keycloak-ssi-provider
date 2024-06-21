@@ -14,8 +14,17 @@ spec:
         app: idp-keycloack-ssi-idp
     spec:
       containers:
-        - image: 444170698423.dkr.ecr.eu-west-1.amazonaws.com/idp-keycloak-ssi-idp:1.0
+        - image: public.ecr.aws/dizme.io/keycloak-ssi-idp:0.1.2-CL
           name: idp-keycloack-ssi-idp
+          env: 
+            - name: NODE_ENV
+              value: "production"
+            - name: VERIFIER_URL
+              value: "https://verifier-backend.eudiw.dev"
+            - name: OIDC4VP_SCHEME
+              value: "eudi-openid4vp://"
+            - name: PRESENTATION_FORMAT
+              value: "mso_mdoc"
           ports:
             - containerPort: 3000
           resources: {}
