@@ -11,7 +11,7 @@ export async function getVerificationRequestUri(credentialType: string) {
         uuid(),
         credentialType,
         credentialType,
-        ["age_over_18", "nationality"]
+        ["age_over_18", "nationality", "document_number"]
     );
 
     try {

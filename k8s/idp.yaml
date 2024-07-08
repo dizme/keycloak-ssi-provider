@@ -1,0 +1,46 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  namespace: eudi-wallet
+  name: idp-keycloack-ssi-idp
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: idp-keycloack-ssi-idp
+  template:
+    metadata:
+      labels:
+        app: idp-keycloack-ssi-idp
+    spec:
+      containers:
+        - image: public.ecr.aws/dizme.io/keycloak-ssi-idp:0.1.2-CL
+          name: idp-keycloack-ssi-idp
+          env: 
+            - name: NODE_ENV
+              value: "production"
+            - name: VERIFIER_URL
+              value: "https://verifier-backend.eudiw.dev"
+            - name: OIDC4VP_SCHEME
+              value: "eudi-openid4vp://"
+            - name: PRESENTATION_FORMAT
+              value: "mso_mdoc"
+          ports:
+            - containerPort: 3000
+          resources: {}
+
+---
+apiVersion: v1
+kind: Service
+metadata:
+  namespace: eudi-wallet
+  name: idp-keycloack-ssi-idp-service
+spec:
+  ports:
+    - port: 88
+      protocol: TCP
+      name: http
+      targetPort: 3000
+  selector:
+    app: idp-keycloack-ssi-idp
+  type: NodePort
