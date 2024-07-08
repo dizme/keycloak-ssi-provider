@@ -6,7 +6,7 @@ public class CredentialElement {
     @JsonProperty("elementIdentifier")
     private String elementIdentifier;
     @JsonProperty("elementValue")
-    private Object elementValue;
+    private String elementValue;
 
     public String getElementIdentifier() {
         return elementIdentifier;
@@ -16,11 +16,11 @@ public class CredentialElement {
         this.elementIdentifier = elementIdentifier;
     }
 
-    public Object getElementValue() {
+    public String getElementValue() {
         return elementValue;
     }
 
-    public void setElementValue(Object elementValue) {
+    public void setElementValue(String elementValue) {
         this.elementValue = elementValue;
     }
 

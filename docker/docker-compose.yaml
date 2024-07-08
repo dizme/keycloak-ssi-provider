@@ -8,10 +8,13 @@ services:
     command:
       - start-dev
       - --import-realm
-#      - --log-level=INFO,io.dizme:DEBUG
+      - --log-level=INFO,io.dizme:DEBUG
     environment:
       - KEYCLOAK_ADMIN=admin
       - KEYCLOAK_ADMIN_PASSWORD=password
+      - DEBUG=true
+      - DEBUG_PORT=*:5005
+      - DEBUG_SUSPEND=n
     ports:
       - "8080:8080"
     healthcheck:
@@ -25,10 +28,10 @@ services:
       - ./keycloak/providers/:/opt/keycloak/providers
 
   keycloak-ssi-idp:
-#    build:
-#      context: ../idp
-#      dockerfile: Dockerfile
-    image: public.ecr.aws/dizme.io/keycloak-ssi-idp:0.1.2-CL
+    build:
+      context: ../idp
+      dockerfile: Dockerfile
+#    image: public.ecr.aws/dizme.io/keycloak-ssi-idp:0.1.2-CL
     container_name: keycloak-ssi-idp
     ports:
       - "88:3000"
