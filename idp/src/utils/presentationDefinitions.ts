@@ -73,6 +73,12 @@ const customPresentation = {
                             "$['eu.europa.ec.eudiw.pid.1']['nationality']"
                         ],
                         "intent_to_retain": false
+                    },
+                    {
+                        "path": [
+                            "$['eu.europa.ec.eudi.pid.1']['document_number']"
+                        ],
+                        "intent_to_retain": false
                     }
                 ]
             }
