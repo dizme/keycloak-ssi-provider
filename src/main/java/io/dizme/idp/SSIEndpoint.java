@@ -132,8 +132,8 @@ public class SSIEndpoint {
     }
 
     private String getTokenResponse(String id) throws Exception {
-//        try (CloseableHttpClient client = HttpClients.createDefault()) {
-        try (CloseableHttpClient client = createHttpClient()) {
+        try (CloseableHttpClient client = HttpClients.createDefault()) {
+//        try (CloseableHttpClient client = createHttpClient()) {
             HttpGet request = new HttpGet(config.getVerifierUrl() + "/ui/presentations/" + id);
             try (CloseableHttpResponse response = client.execute(request)) {
                 if (response.getStatusLine().getStatusCode() != 200) {
