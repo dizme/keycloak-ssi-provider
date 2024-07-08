@@ -33,6 +33,7 @@ import java.io.FileInputStream;
 import java.io.IOException;
 import java.security.KeyStore;
 import java.util.List;
+import java.util.stream.Collectors;
 
 public class SSIEndpoint {
     protected static final Logger logger = Logger.getLogger(SSIEndpoint.class);
@@ -98,11 +99,15 @@ public class SSIEndpoint {
                 throw new InvalidVpTokenException("No claim found in vp token");
             }
             BrokeredIdentityContext identity = new BrokeredIdentityContext(id);
-            identity.setUsername(id);
-            identity.setModelUsername(id);
+            List<CredentialElement> result = elements.stream()
+                    .filter(item -> item.getElementIdentifier().equals("document_number"))
+                    .collect(Collectors.toList());
+            String idLabel = result.isEmpty() ? id : result.get(0).getElementValue();
+            identity.setUsername(idLabel);
+            identity.setModelUsername(idLabel);
             identity.setEmail("test@dizme.io");
 
-            String brokerUserId = config.getAlias() + "." + id;
+            String brokerUserId = config.getAlias() + "." + idLabel;
             identity.setBrokerUserId(brokerUserId);
 
             identity.setIdpConfig(config);
@@ -112,7 +117,7 @@ public class SSIEndpoint {
             identity.setAuthenticationSession(authSession);
 
             elements.forEach(
-                    element -> identity.setUserAttribute(config.getCredentialType()+"_"+element.getElementIdentifier(), element.getElementValue().toString())
+                    element -> identity.setUserAttribute(config.getCredentialType()+"_"+element.getElementIdentifier(), element.getElementValue())
             );
 
             return callback.authenticated(identity);
@@ -127,8 +132,8 @@ public class SSIEndpoint {
     }
 
     private String getTokenResponse(String id) throws Exception {
-//        try (CloseableHttpClient client = HttpClients.createDefault()) {
-        try (CloseableHttpClient client = createHttpClient()) {
+        try (CloseableHttpClient client = HttpClients.createDefault()) {
+//        try (CloseableHttpClient client = createHttpClient()) {
             HttpGet request = new HttpGet(config.getVerifierUrl() + "/ui/presentations/" + id);
             try (CloseableHttpResponse response = client.execute(request)) {
                 if (response.getStatusLine().getStatusCode() != 200) {
