@@ -37,11 +37,14 @@ const Page: NextPage = () => {
       const verifierUrl = settings.VERIFIER_URL;
       const params = new URLSearchParams(window.location.search);
       const credentialType = params.get('credentialType');
+      const claims = params.get('claims');
+
       setCredentialType(credentialType || '');
 
       if (credentialType) {
         try {
-          const { presentationId, customUri } = await getVerificationRequestUri(credentialType);
+          const attributes = claims?.split(',') || []
+          const { presentationId, customUri } = await getVerificationRequestUri(credentialType, attributes);
           setVerificationState(presentationId);
           setQrValue(customUri);
           pollEndpoint(presentationId, credentialType);
