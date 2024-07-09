@@ -24,7 +24,9 @@ import org.keycloak.common.ClientConnection;
 import org.keycloak.events.EventBuilder;
 import org.keycloak.models.KeycloakSession;
 import org.keycloak.models.RealmModel;
+import org.keycloak.models.UserSessionModel;
 import org.keycloak.saml.validators.DestinationValidator;
+import org.keycloak.services.managers.AuthenticationManager;
 import org.keycloak.sessions.AuthenticationSessionModel;
 
 import javax.net.ssl.SSLContext;
@@ -93,16 +95,21 @@ public class SSIEndpoint {
     private Response execute(String id, String state) {
         logger.debug("Verification id from SSI Idp: " + id);
         try {
+            UserSessionModel userSession = session.sessions().getUserSession(realm, state);
+            if (userSession != null) {
+                logger.debug("Existing User Session found, removing");
+                AuthenticationManager.finishBrowserLogout(session, realm, userSession, session.getContext().getUri(), clientConnection, headers);
+            }
             String vpToken = getTokenResponse(id);
             List<CredentialElement> elements = CBORDecoder.decodeCBOR(vpToken, config.getCredentialType());
             if (elements.isEmpty()) {
                 throw new InvalidVpTokenException("No claim found in vp token");
             }
-            BrokeredIdentityContext identity = new BrokeredIdentityContext(id);
             List<CredentialElement> result = elements.stream()
                     .filter(item -> item.getElementIdentifier().equals("document_number"))
                     .collect(Collectors.toList());
             String idLabel = result.isEmpty() ? id : result.get(0).getElementValue();
+            BrokeredIdentityContext identity = new BrokeredIdentityContext(idLabel);
             identity.setUsername(idLabel);
             identity.setModelUsername(idLabel);
             identity.setEmail("test@dizme.io");

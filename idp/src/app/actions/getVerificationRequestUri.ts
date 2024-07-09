@@ -4,14 +4,14 @@ import { v4 as uuid } from 'uuid';
 import { getCustomPresentation } from '@/utils/presentationDefinitions';
 import getEnv from '@/utils/getEnv';
 
-export async function getVerificationRequestUri(credentialType: string) {
+export async function getVerificationRequestUri(credentialType: string, attributes: string[]) {
     const { VERIFIER_URL, OIDC4VP_SCHEME } = getEnv();
 
     const presentationDefinition = getCustomPresentation(
         uuid(),
         credentialType,
         credentialType,
-        ["age_over_18", "nationality", "document_number"]
+        attributes
     );
 
     try {

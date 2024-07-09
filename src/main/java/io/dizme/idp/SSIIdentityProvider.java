@@ -1,13 +1,9 @@
 package io.dizme.idp;
 
-import jakarta.ws.rs.GET;
-import jakarta.ws.rs.QueryParam;
-import jakarta.ws.rs.core.NewCookie;
 import jakarta.ws.rs.core.Response;
 import jakarta.ws.rs.core.UriInfo;
 import org.jboss.logging.Logger;
 import org.keycloak.broker.provider.*;
-import org.keycloak.common.util.Base64;
 import org.keycloak.events.EventBuilder;
 import org.keycloak.models.FederatedIdentityModel;
 import org.keycloak.models.KeycloakSession;
@@ -15,7 +11,6 @@ import org.keycloak.models.RealmModel;
 import org.keycloak.models.UserSessionModel;
 import org.keycloak.saml.validators.DestinationValidator;
 import org.keycloak.sessions.AuthenticationSessionModel;
-import twitter4j.RequestToken;
 
 import java.net.URI;
 import java.net.URLEncoder;
@@ -33,12 +28,15 @@ public class SSIIdentityProvider extends AbstractIdentityProvider<SSIIdentityPro
 
     private final String idpUrl;
 
+    private final String claimRequested;
+
     public SSIIdentityProvider(KeycloakSession session, SSIIdentityProviderConfig config, DestinationValidator destinationValidator) {
         super(session, config);
         this.destinationValidator = destinationValidator;
         this.verifierUrl = config.getVerifierUrl();
         this.credentialType = config.getCredentialType();
         this.idpUrl = config.getIdpUrl();
+        this.claimRequested = config.getClaimRequested();
         logger.debug("SSIIdentityProvider() called");
 
     }
@@ -59,7 +57,12 @@ public class SSIIdentityProvider extends AbstractIdentityProvider<SSIIdentityPro
             );
             URI uri = new URI(request.getRedirectUri() + "?state=" + request.getState().getEncoded());
             String uriEncoded = URLEncoder.encode(uri.toString(), StandardCharsets.UTF_8);
-            return Response.seeOther(URI.create(idpUrl + "?credentialType=" + credentialType + "&redirectUri=" + uriEncoded)).build();
+            return Response.seeOther(
+                    URI.create(
+                            idpUrl + "?credentialType=" + credentialType
+                                    + "&redirectUri=" + uriEncoded
+                                    + "&claims=" + claimRequested
+                    )).build();
         } catch (Exception e) {
             throw new IdentityBrokerException("Could send authentication request to SSI Provider.", e);
         }
