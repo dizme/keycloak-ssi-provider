@@ -39,6 +39,7 @@ The previous setup should already set everything you need. Follow this steps onl
 5. Fill the `IDP Url` with the URL of the IDP you want to use (e.g. using provided idp `http://localhost:88`)
 6. Fill the `Credential Type` with the Type of the credential you want to verify.
 7. Fill the `Verifier Url` with the URL of the Verifier you want to use (e.g. using provided idp `http://localhost:80`)
+8. Fill the `Claims requested` with a comma separated list of claims to be asked for
 
 > **NOTE:** The verifier referenced by `verifierUrl` **MUST** be the same as the one used by the IDP.  \
 > In the provided examples, the IDP and the Verifier use the [EUDI verifier endpoints](https://verifier-backend.eudiw.dev).
