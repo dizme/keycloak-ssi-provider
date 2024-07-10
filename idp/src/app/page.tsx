@@ -16,6 +16,7 @@ const Page: NextPage = () => {
   const [loading, setLoading] = useState(true);
   const pollingIntervalRef = useRef<number | null>(null);
   const [settings, setSettings] = useState<EnvSettings | null>(null);
+  const [claims, setClaims] = useState<string[]>(["document_number"]);
 
   useEffect(() => {
     async function fetchSettings() {
@@ -43,7 +44,8 @@ const Page: NextPage = () => {
 
       if (credentialType) {
         try {
-          const attributes = claims?.split(',') || []
+          const attributes = claims?.split(',').filter(attr => attr !== "") || [];
+          setClaims(attributes);
           const { presentationId, customUri } = await getVerificationRequestUri(credentialType, attributes);
           setVerificationState(presentationId);
           setQrValue(customUri);
@@ -124,13 +126,26 @@ const Page: NextPage = () => {
       <div className="flex flex-col items-center justify-center bg-gray-50 min-h-screen">
         <div className="text-center">
           <h1 className="text-2xl font-bold text-gray-900 sm:text-3xl lg:text-4xl mt-5">
-            Login with {credentialType} credential
+            You are requesting to present
           </h1>
+          <h2 className="text-xl font-bold text-gray-400 sm:text-3xl lg:text-4xl mt-5">
+            <code>{credentialType}</code>
+          </h2>
+          <div className="text-md font-bold text-gray-900 sm:text-lg lg:text-xl mt-5">
+            Requested Claims:
+            <ul>
+              {claims.map((claim, index) => (
+                  <li key={index} className="font-mono text-gray-500">
+                    {claim}
+                  </li>
+              ))}
+            </ul>
+          </div>
           <div className="my-10 inline-block">
             {loading ? (
                 <div className="animate-spin rounded-full h-32 w-32 border-b-2 border-gray-900 my-10"></div>
             ) : (
-                <QRCode value={qrValue} viewBox="0 0 256 256" />
+                <QRCode value={qrValue} viewBox="0 0 256 256"/>
             )}
           </div>
           <div className="flex flex-col sm:flex-row gap-5 justify-center items-center">
