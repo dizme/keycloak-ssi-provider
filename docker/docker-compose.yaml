@@ -1,9 +1,42 @@
-version: "3.2"
+version: '3.8'
+name: kc-with-ssi-idp
 
 services:
-  fake-idp:
-    image: nginx:alpine
-    volumes:
-      - ./src:/usr/share/nginx/html
+  keycloak:
+    image: quay.io/keycloak/keycloak:24.0.0
+    container_name: keycloak
+    command:
+      - start-dev
+      - --import-realm
+      - --log-level=INFO,io.dizme:DEBUG
+    environment:
+      - KEYCLOAK_ADMIN=admin
+      - KEYCLOAK_ADMIN_PASSWORD=password
+      - DEBUG=true
+      - DEBUG_PORT=*:5005
+      - DEBUG_SUSPEND=n
     ports:
-      - "80:80"
+      - "8080:8080"
+    healthcheck:
+      test: "bash /opt/keycloak/health-check.sh"
+      interval: 5s
+      timeout: 10s
+      retries: 12
+    volumes:
+      - ./keycloak/extra/health-check.sh:/opt/keycloak/health-check.sh
+      - ./keycloak/realms/:/opt/keycloak/data/import
+      - ./keycloak/providers/:/opt/keycloak/providers
+
+  keycloak-ssi-idp:
+    build:
+      context: ../idp
+      dockerfile: Dockerfile
+#    image: public.ecr.aws/dizme.io/keycloak-ssi-idp:0.1.2-CL
+    container_name: keycloak-ssi-idp
+    ports:
+      - "88:3000"
+    environment:
+      - NODE_ENV=production
+      - VERIFIER_URL=https://verifier-backend.eudiw.dev
+      - OIDC4VP_SCHEME=eudi-openid4vp://
+      - PRESENTATION_FORMAT=mso_mdoc

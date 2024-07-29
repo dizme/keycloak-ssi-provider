@@ -16,6 +16,8 @@ public class SSIIdentityProviderConfig extends IdentityProviderModel {
 
     public static final String IDP_URL = "idpUrl";
 
+    public static final String CLAIM_REQUESTED = "claimRequested";
+
     public SSIIdentityProviderConfig() {
         logger.info("SSIIdentityProviderConfig() called");
     }
@@ -50,6 +52,10 @@ public class SSIIdentityProviderConfig extends IdentityProviderModel {
         getConfig().put(IDP_URL, idpUrl);
     }
 
+    public String getClaimRequested() {
+        return getConfig().get(CLAIM_REQUESTED);
+    }
+
     public static List<ProviderConfigProperty> getConfigProperties() {
         logger.info("getConfigProperties called");
         return ProviderConfigurationBuilder.create()
@@ -75,9 +81,23 @@ public class SSIIdentityProviderConfig extends IdentityProviderModel {
                 .helpText("Insert Credential Type")
                 .add()
 
+                .property()
+                .name(CLAIM_REQUESTED)
+                .type(ProviderConfigProperty.STRING_TYPE)
+                .label("Claim Requested")
+                .helpText("The credential claims to ask for. It can be a comma-separated list of claims. No defaults.")
+                .add()
+
                 .build();
     }
 
+    @Override
+    public void setFirstBrokerLoginFlowId(String firstBrokerLoginFlowId) {
+        super.setFirstBrokerLoginFlowId(null);
+    }
 
-
+    @Override
+    public void setPostBrokerLoginFlowId(String postBrokerLoginFlowId) {
+        super.setPostBrokerLoginFlowId(null);
+    }
 }

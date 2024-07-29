@@ -83,12 +83,6 @@
       <artifactId>okhttp</artifactId>
       <version>3.12.0</version>
     </dependency>
-    <!-- https://mvnrepository.com/artifact/com.google.code.gson/gson -->
-    <dependency>
-      <groupId>com.google.code.gson</groupId>
-      <artifactId>gson</artifactId>
-      <version>2.10.1</version>
-    </dependency>
   </dependencies>
 
   <build>
@@ -123,6 +117,7 @@
               <include>com.authlete:sd-jwt</include>
               <include>com.squareup.okhttp3:okhttp</include>
               <include>com.google.code.gson:gson</include>
+              <include>com.upokecenter:cbor</include>
             </includes>
           </artifactSet>
           <filters>
